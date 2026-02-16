@@ -128,6 +128,7 @@ const App = () => {
     setNonceData(null);
 
     try {
+      console.log("fetching... nonce");
       const response = await fetch(`${API_BASE_URL}/auth/nonce`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
