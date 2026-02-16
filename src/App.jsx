@@ -406,6 +406,9 @@ const App = () => {
       </header>
 
       <main className="main-content">
+        <button className="sign-btn" onClick={authenticateWithServer}>
+          CLICK MEEE
+        </button>
         {!walletAddress ? (
           <div className="connect-screen">
             <div className="connect-content">
