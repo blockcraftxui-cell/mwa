@@ -406,7 +406,11 @@ const App = () => {
       </header>
 
       <main className="main-content">
-        <button className="sign-btn" onClick={authenticateWithServer}>
+        <button
+          style={{ marginTop: "100px" }}
+          className="sign-btn"
+          onClick={authenticateWithServer}
+        >
           CLICK MEEE
         </button>
         {!walletAddress ? (
