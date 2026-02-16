@@ -388,7 +388,15 @@ const App = () => {
         <div className="header-content">
           <div className="logo">
             <div className="logo-icon">◈</div>
-            <span className="logo-text">SolMobile</span>
+            <span className="logo-text">---SolMobile---</span>
+
+            <button
+              style={{ marginTop: "100px" }}
+              className="sign-btn"
+              onClick={authenticateWithServer}
+            >
+              CLICK MEEE
+            </button>
           </div>
           {walletAddress && (
             <button className="menu-btn" onClick={() => setShowMenu(!showMenu)}>
@@ -406,13 +414,6 @@ const App = () => {
       </header>
 
       <main className="main-content">
-        <button
-          style={{ marginTop: "100px" }}
-          className="sign-btn"
-          onClick={authenticateWithServer}
-        >
-          CLICK MEEE
-        </button>
         {!walletAddress ? (
           <div className="connect-screen">
             <div className="connect-content">
