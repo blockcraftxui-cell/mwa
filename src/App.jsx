@@ -133,7 +133,7 @@ const App = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          wallet: "4JAyLk4gFruEzesb9BZr6VYZcTFvVk1AgDXGZs1Ebfpd",
+          wallet: walletAddress,
         }),
       });
 
@@ -239,7 +239,7 @@ const App = () => {
 
   // Full 3-step authentication flow
   const authenticateWithServer = useCallback(async () => {
-    // if (!walletAddress || !authToken) return;
+    if (!walletAddress || !authToken) return;
 
     // Step 1: Get nonce
     const nonce = await fetchNonce();
@@ -252,8 +252,8 @@ const App = () => {
     // Step 3: Verify and get tokens
     await verifySignature(signature, nonce.nonce);
   }, [
-    // walletAddress,
-    // authToken,
+    walletAddress,
+    authToken,
     fetchNonce,
     signServerMessage,
     verifySignature,
