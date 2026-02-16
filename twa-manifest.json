@@ -1,0 +1,51 @@
+{
+  "packageId": "com.bb.solmobile",
+  "host": "solmobile-wallet.pages.dev",
+  "name": "SolMobile Wallet",
+  "launcherName": "SolMobile",
+  "display": "standalone",
+  "themeColor": "#0A0A0F",
+  "themeColorDark": "#0A0A0F",
+  "navigationColor": "#0A0A0F",
+  "navigationColorDark": "#0A0A0F",
+  "navigationDividerColor": "#0A0A0F",
+  "navigationDividerColorDark": "#0A0A0F",
+  "backgroundColor": "#0A0A0F",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://solmobile-wallet.pages.dev/icons/icon-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "android.keystore",
+    "alias": "android"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://solmobile-wallet.pages.dev/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://solmobile-wallet.pages.dev/",
+  "minSdkVersion": 23,
+  "orientation": "portrait",
+  "fingerprints": [
+    {
+      "name": "release",
+      "value": "1A:2D:38:D4:37:C7:53:AA:04:73:12:12:EA:2B:04:43:D8:D3:08:25:59:1E:12:A8:49:E6:01:B1:80:B4:E6:D7"
+    }
+  ]
+}

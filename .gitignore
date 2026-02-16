@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE / Editor
+.vscode/
+.idea/
+.wrangler/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Android TWA build artifacts
+android-twa/
+*.apk
+*.aab
+*.keystore
+
+# Bubblewrap
+.bubblewrap/
+
+# OS files
+Thumbs.db

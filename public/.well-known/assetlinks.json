@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.bb.solmobile",
+      "sha256_cert_fingerprints": [
+        "1A:2D:38:D4:37:C7:53:AA:04:73:12:12:EA:2B:04:43:D8:D3:08:25:59:1E:12:A8:49:E6:01:B1:80:B4:E6:D7"
+      ]
+    }
+  }
+]
