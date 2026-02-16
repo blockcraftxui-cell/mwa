@@ -1,22 +1,27 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Connection, PublicKey, LAMPORTS_PER_SOL, clusterApiUrl } from '@solana/web3.js';
-import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
-import bs58 from 'bs58';
-import nacl from 'tweetnacl';
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Connection,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+  clusterApiUrl,
+} from "@solana/web3.js";
+import { transact } from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
+import bs58 from "bs58";
+import nacl from "tweetnacl";
 
-const API_BASE_URL = 'https://bigbull-api.bigbullnow-dev.workers.dev/api/v1';
+const API_BASE_URL = "https://bigbull-api.bigbullnow-dev.workers.dev/api/v1";
 
 const App = () => {
   const [walletAddress, setWalletAddress] = useState(null);
   const [balance, setBalance] = useState(0);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [activeTab, setActiveTab] = useState('wallet');
+  const [activeTab, setActiveTab] = useState("wallet");
   const [showMenu, setShowMenu] = useState(false);
   const [authToken, setAuthToken] = useState(null);
 
   // Server auth flow states
-  const [authStep, setAuthStep] = useState('idle'); // idle | fetching_nonce | signing | verifying | authenticated | error
+  const [authStep, setAuthStep] = useState("idle"); // idle | fetching_nonce | signing | verifying | authenticated | error
   const [authError, setAuthError] = useState(null);
   const [nonceData, setNonceData] = useState(null); // { message, nonce, expires_at }
   const [accessToken, setAccessToken] = useState(null);
@@ -26,54 +31,63 @@ const App = () => {
   const [signatureDisplay, setSignatureDisplay] = useState(null);
 
   // Sign message (free-form) states
-  const [messageToSign, setMessageToSign] = useState('');
+  const [messageToSign, setMessageToSign] = useState("");
   const [signedMessage, setSignedMessage] = useState(null);
   const [isSigning, setIsSigning] = useState(false);
 
   // Verify signature states
-  const [verifyMessage, setVerifyMessage] = useState('');
-  const [verifySignatureInput, setVerifySignatureInput] = useState('');
+  const [verifyMessage, setVerifyMessage] = useState("");
+  const [verifySignatureInput, setVerifySignatureInput] = useState("");
   const [verifyResult, setVerifyResult] = useState(null); // null | 'valid' | 'invalid'
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Inner tab for sign card
-  const [signTab, setSignTab] = useState('auth'); // 'auth' | 'sign' | 'verify'
+  const [signTab, setSignTab] = useState("auth"); // 'auth' | 'sign' | 'verify'
 
-  const connection = useMemo(() => new Connection(clusterApiUrl('devnet'), 'confirmed'), []);
+  const connection = useMemo(
+    () => new Connection(clusterApiUrl("devnet"), "confirmed"),
+    [],
+  );
 
   const connectWallet = useCallback(async () => {
     setIsConnecting(true);
     try {
       await transact(async (wallet) => {
         const authResult = await wallet.authorize({
-          cluster: 'devnet',
+          cluster: "devnet",
           identity: {
-            name: 'SolMobile Wallet',
+            name: "SolMobile Wallet",
             uri: window.location.origin,
-            icon: 'favicon.ico',
+            icon: "favicon.ico",
           },
         });
-        
+
         setAuthToken(authResult.auth_token);
-        
+
         if (authResult.accounts && authResult.accounts.length > 0) {
           const addressBytes = new Uint8Array(
             atob(authResult.accounts[0].address)
-              .split('')
-              .map((c) => c.charCodeAt(0))
+              .split("")
+              .map((c) => c.charCodeAt(0)),
           );
           const publicKey = new PublicKey(addressBytes);
           setWalletAddress(publicKey.toBase58());
         }
       });
     } catch (error) {
-      console.error('Connection failed:', error);
-      if (error.message && error.message.includes('User declined')) {
-        alert('Connection rejected. Please approve the connection in your wallet.');
-      } else if (error.message && error.message.includes('secure context')) {
-        alert('This app must be served over HTTPS for the mobile wallet adapter to work.');
+      console.error("Connection failed:", error);
+      if (error.message && error.message.includes("User declined")) {
+        alert(
+          "Connection rejected. Please approve the connection in your wallet.",
+        );
+      } else if (error.message && error.message.includes("secure context")) {
+        alert(
+          "This app must be served over HTTPS for the mobile wallet adapter to work.",
+        );
       } else {
-        alert(`Failed to connect wallet: ${error.message || 'Unknown error'}. Make sure you have a Solana mobile wallet installed.`);
+        alert(
+          `Failed to connect wallet: ${error.message || "Unknown error"}. Make sure you have a Solana mobile wallet installed.`,
+        );
       }
     } finally {
       setIsConnecting(false);
@@ -93,7 +107,7 @@ const App = () => {
       setAuthToken(null);
       setShowMenu(false);
     } catch (error) {
-      console.error('Disconnect failed:', error);
+      console.error("Disconnect failed:", error);
       setWalletAddress(null);
       setBalance(0);
       setRecentTransactions([]);
@@ -104,7 +118,7 @@ const App = () => {
 
   // Step 1: Request nonce from server
   const fetchNonce = useCallback(async () => {
-    setAuthStep('fetching_nonce');
+    setAuthStep("fetching_nonce");
     setAuthError(null);
     setAccessToken(null);
     setRefreshToken(null);
@@ -115,8 +129,8 @@ const App = () => {
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/nonce`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           wallet: walletAddress,
         }),
@@ -130,82 +144,96 @@ const App = () => {
       setNonceData(data);
       return data;
     } catch (error) {
-      console.error('Nonce fetch failed:', error);
-      setAuthStep('error');
+      console.error("Nonce fetch failed:", error);
+      setAuthStep("error");
       setAuthError(`Failed to get nonce: ${error.message}`);
       return null;
     }
   }, [walletAddress]);
 
   // Step 2: Sign the server message with wallet
-  const signServerMessage = useCallback(async (message) => {
-    setAuthStep('signing');
-    try {
-      let signatureBase58 = null;
-      await transact(async (wallet) => {
-        await wallet.reauthorize({ auth_token: authToken });
-        const messageBytes = new TextEncoder().encode(message);
-        const result = await wallet.signMessages({
-          addresses: [
-            new Uint8Array(
-              atob(
-                btoa(String.fromCharCode(...new PublicKey(walletAddress).toBytes()))
-              ).split('').map(c => c.charCodeAt(0))
-            )
-          ],
-          payloads: [messageBytes],
+  const signServerMessage = useCallback(
+    async (message) => {
+      setAuthStep("signing");
+      try {
+        let signatureBase58 = null;
+        await transact(async (wallet) => {
+          await wallet.reauthorize({ auth_token: authToken });
+          const messageBytes = new TextEncoder().encode(message);
+          const result = await wallet.signMessages({
+            addresses: [
+              new Uint8Array(
+                atob(
+                  btoa(
+                    String.fromCharCode(
+                      ...new PublicKey(walletAddress).toBytes(),
+                    ),
+                  ),
+                )
+                  .split("")
+                  .map((c) => c.charCodeAt(0)),
+              ),
+            ],
+            payloads: [messageBytes],
+          });
+          if (result && result.length > 0) {
+            const signatureBytes = new Uint8Array(result[0]);
+            signatureBase58 = bs58.encode(signatureBytes);
+            setSignatureDisplay(signatureBase58);
+          }
         });
-        if (result && result.length > 0) {
-          const signatureBytes = new Uint8Array(result[0]);
-          signatureBase58 = bs58.encode(signatureBytes);
-          setSignatureDisplay(signatureBase58);
+        return signatureBase58;
+      } catch (error) {
+        console.error("Sign message failed:", error);
+        if (error.message && error.message.includes("User declined")) {
+          setAuthError("Signing rejected by wallet.");
+        } else {
+          setAuthError(
+            `Failed to sign message: ${error.message || "Unknown error"}`,
+          );
         }
-      });
-      return signatureBase58;
-    } catch (error) {
-      console.error('Sign message failed:', error);
-      if (error.message && error.message.includes('User declined')) {
-        setAuthError('Signing rejected by wallet.');
-      } else {
-        setAuthError(`Failed to sign message: ${error.message || 'Unknown error'}`);
+        setAuthStep("error");
+        return null;
       }
-      setAuthStep('error');
-      return null;
-    }
-  }, [authToken, walletAddress]);
+    },
+    [authToken, walletAddress],
+  );
 
   // Step 3: Verify signature and get tokens
-  const verifySignature = useCallback(async (signature, nonce) => {
-    setAuthStep('verifying');
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wallet: walletAddress,
-          signature: signature,
-          nonce: nonce,
-        }),
-      });
+  const verifySignature = useCallback(
+    async (signature, nonce) => {
+      setAuthStep("verifying");
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            wallet: walletAddress,
+            signature: signature,
+            nonce: nonce,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`Verify request failed: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`Verify request failed: ${response.status}`);
+        }
+
+        const { data } = await response.json();
+        setAccessToken(data.access_token);
+        setRefreshToken(data.refresh_token);
+        setApiKey(data.apiKey || null);
+        setUserInfo(data.user || null);
+        setAuthStep("authenticated");
+        return data;
+      } catch (error) {
+        console.error("Verification failed:", error);
+        setAuthStep("error");
+        setAuthError(`Verification failed: ${error.message}`);
+        return null;
       }
-
-      const { data } = await response.json();
-      setAccessToken(data.access_token);
-      setRefreshToken(data.refresh_token);
-      setApiKey(data.apiKey || null);
-      setUserInfo(data.user || null);
-      setAuthStep('authenticated');
-      return data;
-    } catch (error) {
-      console.error('Verification failed:', error);
-      setAuthStep('error');
-      setAuthError(`Verification failed: ${error.message}`);
-      return null;
-    }
-  }, [walletAddress]);
+    },
+    [walletAddress],
+  );
 
   // Full 3-step authentication flow
   const authenticateWithServer = useCallback(async () => {
@@ -221,7 +249,13 @@ const App = () => {
 
     // Step 3: Verify and get tokens
     await verifySignature(signature, nonce.nonce);
-  }, [walletAddress, authToken, fetchNonce, signServerMessage, verifySignature]);
+  }, [
+    walletAddress,
+    authToken,
+    fetchNonce,
+    signServerMessage,
+    verifySignature,
+  ]);
 
   // Free-form sign message
   const signMessage = useCallback(async () => {
@@ -236,9 +270,15 @@ const App = () => {
           addresses: [
             new Uint8Array(
               atob(
-                btoa(String.fromCharCode(...new PublicKey(walletAddress).toBytes()))
-              ).split('').map(c => c.charCodeAt(0))
-            )
+                btoa(
+                  String.fromCharCode(
+                    ...new PublicKey(walletAddress).toBytes(),
+                  ),
+                ),
+              )
+                .split("")
+                .map((c) => c.charCodeAt(0)),
+            ),
           ],
           payloads: [messageBytes],
         });
@@ -249,11 +289,11 @@ const App = () => {
         }
       });
     } catch (error) {
-      console.error('Sign message failed:', error);
-      if (error.message && error.message.includes('User declined')) {
-        alert('Signing rejected by wallet.');
+      console.error("Sign message failed:", error);
+      if (error.message && error.message.includes("User declined")) {
+        alert("Signing rejected by wallet.");
       } else {
-        alert(`Failed to sign message: ${error.message || 'Unknown error'}`);
+        alert(`Failed to sign message: ${error.message || "Unknown error"}`);
       }
     } finally {
       setIsSigning(false);
@@ -262,18 +302,23 @@ const App = () => {
 
   // Verify a signature against the connected wallet
   const verifyMessageSignature = useCallback(async () => {
-    if (!verifyMessage.trim() || !verifySignatureInput.trim() || !walletAddress) return;
+    if (!verifyMessage.trim() || !verifySignatureInput.trim() || !walletAddress)
+      return;
     setIsVerifying(true);
     setVerifyResult(null);
     try {
       const messageBytes = new TextEncoder().encode(verifyMessage);
       const signatureBytes = bs58.decode(verifySignatureInput.trim());
       const publicKeyBytes = new PublicKey(walletAddress).toBytes();
-      const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
-      setVerifyResult(isValid ? 'valid' : 'invalid');
+      const isValid = nacl.sign.detached.verify(
+        messageBytes,
+        signatureBytes,
+        publicKeyBytes,
+      );
+      setVerifyResult(isValid ? "valid" : "invalid");
     } catch (error) {
-      console.error('Verification failed:', error);
-      setVerifyResult('invalid');
+      console.error("Verification failed:", error);
+      setVerifyResult("invalid");
     } finally {
       setIsVerifying(false);
     }
@@ -286,7 +331,7 @@ const App = () => {
       const balanceLamports = await connection.getBalance(publicKey);
       setBalance(balanceLamports / LAMPORTS_PER_SOL);
     } catch (error) {
-      console.error('Failed to fetch balance:', error);
+      console.error("Failed to fetch balance:", error);
     }
   }, [walletAddress, connection]);
 
@@ -294,7 +339,9 @@ const App = () => {
     if (!walletAddress) return;
     try {
       const publicKey = new PublicKey(walletAddress);
-      const signatures = await connection.getSignaturesForAddress(publicKey, { limit: 10 });
+      const signatures = await connection.getSignaturesForAddress(publicKey, {
+        limit: 10,
+      });
       const txs = await Promise.all(
         signatures.map(async (sig) => {
           return {
@@ -303,11 +350,11 @@ const App = () => {
             slot: sig.slot,
             err: sig.err,
           };
-        })
+        }),
       );
       setRecentTransactions(txs);
     } catch (error) {
-      console.error('Failed to fetch transactions:', error);
+      console.error("Failed to fetch transactions:", error);
     }
   }, [walletAddress, connection]);
 
@@ -324,14 +371,14 @@ const App = () => {
   }, [walletAddress, fetchBalance, fetchTransactions]);
 
   const formatAddress = (address) => {
-    if (!address) return '';
+    if (!address) return "";
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
   const formatTime = (timestamp) => {
-    if (!timestamp) return 'Unknown';
+    if (!timestamp) return "Unknown";
     const date = new Date(timestamp * 1000);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 
   return (
@@ -366,19 +413,27 @@ const App = () => {
               <p className="connect-description">
                 Connect your Solana mobile wallet to get started
               </p>
-              <button className="connect-btn" onClick={connectWallet} disabled={isConnecting}>
+              <button
+                className="connect-btn"
+                onClick={connectWallet}
+                disabled={isConnecting}
+              >
                 {isConnecting ? (
                   <>
                     <div className="spinner"></div>
                     Connecting...
                   </>
                 ) : (
-                  'Connect Wallet'
+                  "Connect Wallet"
                 )}
               </button>
               <div className="connect-info">
-                <p className="info-text">This app uses Solana Mobile Wallet Adapter</p>
-                <p className="info-subtext">Your wallet app will open for authorization</p>
+                <p className="info-text">
+                  This app uses Solana Mobile Wallet Adapter
+                </p>
+                <p className="info-subtext">
+                  Your wallet app will open for authorization
+                </p>
               </div>
               <div className="connect-features">
                 <div className="feature">
@@ -401,20 +456,27 @@ const App = () => {
             <div className="wallet-card">
               <div className="wallet-header">
                 <span className="wallet-label">Wallet Address</span>
-                <button className="copy-btn" onClick={() => {
-                  navigator.clipboard.writeText(walletAddress);
-                  alert('Address copied!');
-                }}>
+                <button
+                  className="copy-btn"
+                  onClick={() => {
+                    navigator.clipboard.writeText(walletAddress);
+                    alert("Address copied!");
+                  }}
+                >
                   Copy
                 </button>
               </div>
-              <div className="wallet-address">{formatAddress(walletAddress)}</div>
+              <div className="wallet-address">
+                {formatAddress(walletAddress)}
+              </div>
               <div className="balance-section">
                 <div className="balance-label">Total Balance</div>
                 <div className="balance-amount">
                   {balance.toFixed(4)} <span className="currency">SOL</span>
                 </div>
-                <div className="balance-usd">≈ ${(balance * 0).toFixed(2)} USD</div>
+                <div className="balance-usd">
+                  ≈ ${(balance * 0).toFixed(2)} USD
+                </div>
               </div>
               <div className="action-buttons">
                 <button className="action-btn primary">
@@ -432,45 +494,52 @@ const App = () => {
               {/* Inner Tab Navigation */}
               <div className="sign-tab-nav">
                 <button
-                  className={`sign-tab ${signTab === 'auth' ? 'active' : ''}`}
-                  onClick={() => setSignTab('auth')}
+                  className={`sign-tab ${signTab === "auth" ? "active" : ""}`}
+                  onClick={() => setSignTab("auth")}
                 >
                   Server Auth
                 </button>
                 <button
-                  className={`sign-tab ${signTab === 'sign' ? 'active' : ''}`}
-                  onClick={() => setSignTab('sign')}
+                  className={`sign-tab ${signTab === "sign" ? "active" : ""}`}
+                  onClick={() => setSignTab("sign")}
                 >
                   Sign
                 </button>
                 <button
-                  className={`sign-tab ${signTab === 'verify' ? 'active' : ''}`}
-                  onClick={() => setSignTab('verify')}
+                  className={`sign-tab ${signTab === "verify" ? "active" : ""}`}
+                  onClick={() => setSignTab("verify")}
                 >
                   Verify
                 </button>
               </div>
 
               {/* Server Authentication Tab */}
-              {signTab === 'auth' && (
+              {signTab === "auth" && (
                 <div className="sign-tab-content">
                   <p className="auth-description">
-                    Authenticate with the server by signing a nonce message with your wallet.
+                    Authenticate with the server by signing a nonce message with
+                    your wallet.
                   </p>
 
                   {/* Auth Step Indicator */}
                   <div className="auth-steps">
-                    <div className={`auth-step-indicator ${authStep === 'fetching_nonce' ? 'active' : ''} ${['signing', 'verifying', 'authenticated'].includes(authStep) ? 'done' : ''}`}>
+                    <div
+                      className={`auth-step-indicator ${authStep === "fetching_nonce" ? "active" : ""} ${["signing", "verifying", "authenticated"].includes(authStep) ? "done" : ""}`}
+                    >
                       <div className="step-number">1</div>
                       <div className="step-label">Get Nonce</div>
                     </div>
                     <div className="step-connector" />
-                    <div className={`auth-step-indicator ${authStep === 'signing' ? 'active' : ''} ${['verifying', 'authenticated'].includes(authStep) ? 'done' : ''}`}>
+                    <div
+                      className={`auth-step-indicator ${authStep === "signing" ? "active" : ""} ${["verifying", "authenticated"].includes(authStep) ? "done" : ""}`}
+                    >
                       <div className="step-number">2</div>
                       <div className="step-label">Sign</div>
                     </div>
                     <div className="step-connector" />
-                    <div className={`auth-step-indicator ${authStep === 'verifying' ? 'active' : ''} ${authStep === 'authenticated' ? 'done' : ''}`}>
+                    <div
+                      className={`auth-step-indicator ${authStep === "verifying" ? "active" : ""} ${authStep === "authenticated" ? "done" : ""}`}
+                    >
                       <div className="step-number">3</div>
                       <div className="step-label">Verify</div>
                     </div>
@@ -483,28 +552,41 @@ const App = () => {
                       <div className="nonce-message">{nonceData.message}</div>
                       <div className="nonce-meta">
                         <span>Nonce: {nonceData.nonce.slice(0, 12)}...</span>
-                        <span>Expires: {new Date(nonceData.expires_at).toLocaleTimeString()}</span>
+                        <span>
+                          Expires:{" "}
+                          {new Date(nonceData.expires_at).toLocaleTimeString()}
+                        </span>
                       </div>
                     </div>
                   )}
 
                   {/* Authenticate Button */}
-                  {authStep !== 'authenticated' && (
+                  {authStep !== "authenticated" && (
                     <button
                       className="sign-btn"
                       onClick={authenticateWithServer}
-                      disabled={['fetching_nonce', 'signing', 'verifying'].includes(authStep)}
+                      disabled={[
+                        "fetching_nonce",
+                        "signing",
+                        "verifying",
+                      ].includes(authStep)}
                     >
-                      {authStep === 'fetching_nonce' ? (
-                        <><div className="spinner"></div>Fetching Nonce...</>
-                      ) : authStep === 'signing' ? (
-                        <><div className="spinner"></div>Sign in Wallet...</>
-                      ) : authStep === 'verifying' ? (
-                        <><div className="spinner"></div>Verifying...</>
-                      ) : authStep === 'error' ? (
-                        'Retry Authentication'
+                      {authStep === "fetching_nonce" ? (
+                        <>
+                          <div className="spinner"></div>Fetching Nonce...
+                        </>
+                      ) : authStep === "signing" ? (
+                        <>
+                          <div className="spinner"></div>Sign in Wallet...
+                        </>
+                      ) : authStep === "verifying" ? (
+                        <>
+                          <div className="spinner"></div>Verifying...
+                        </>
+                      ) : authStep === "error" ? (
+                        "Retry Authentication"
                       ) : (
-                        'Authenticate with Server'
+                        "Authenticate with Server"
                       )}
                     </button>
                   )}
@@ -522,17 +604,20 @@ const App = () => {
                     <div className="signed-result">
                       <div className="signed-label">Wallet Signature</div>
                       <div className="signed-value">{signatureDisplay}</div>
-                      <button className="copy-btn" onClick={() => {
-                        navigator.clipboard.writeText(signatureDisplay);
-                        alert('Signature copied!');
-                      }}>
+                      <button
+                        className="copy-btn"
+                        onClick={() => {
+                          navigator.clipboard.writeText(signatureDisplay);
+                          alert("Signature copied!");
+                        }}
+                      >
                         Copy Signature
                       </button>
                     </div>
                   )}
 
                   {/* Token Display - shown after successful authentication */}
-                  {authStep === 'authenticated' && (
+                  {authStep === "authenticated" && (
                     <div className="tokens-container">
                       <div className="auth-success-badge">
                         <span className="success-icon">&#10003;</span>
@@ -541,11 +626,16 @@ const App = () => {
 
                       <div className="token-display">
                         <div className="token-display-header">
-                          <div className="token-display-label">Access Token</div>
-                          <button className="copy-btn" onClick={() => {
-                            navigator.clipboard.writeText(accessToken);
-                            alert('Access token copied!');
-                          }}>
+                          <div className="token-display-label">
+                            Access Token
+                          </div>
+                          <button
+                            className="copy-btn"
+                            onClick={() => {
+                              navigator.clipboard.writeText(accessToken);
+                              alert("Access token copied!");
+                            }}
+                          >
                             Copy
                           </button>
                         </div>
@@ -554,25 +644,35 @@ const App = () => {
 
                       <div className="token-display">
                         <div className="token-display-header">
-                          <div className="token-display-label">Refresh Token</div>
-                          <button className="copy-btn" onClick={() => {
-                            navigator.clipboard.writeText(refreshToken);
-                            alert('Refresh token copied!');
-                          }}>
+                          <div className="token-display-label">
+                            Refresh Token
+                          </div>
+                          <button
+                            className="copy-btn"
+                            onClick={() => {
+                              navigator.clipboard.writeText(refreshToken);
+                              alert("Refresh token copied!");
+                            }}
+                          >
                             Copy
                           </button>
                         </div>
-                        <div className="token-display-value">{refreshToken}</div>
+                        <div className="token-display-value">
+                          {refreshToken}
+                        </div>
                       </div>
 
                       {apiKey && (
                         <div className="token-display">
                           <div className="token-display-header">
                             <div className="token-display-label">API Key</div>
-                            <button className="copy-btn" onClick={() => {
-                              navigator.clipboard.writeText(apiKey);
-                              alert('API key copied!');
-                            }}>
+                            <button
+                              className="copy-btn"
+                              onClick={() => {
+                                navigator.clipboard.writeText(apiKey);
+                                alert("API key copied!");
+                              }}
+                            >
                               Copy
                             </button>
                           </div>
@@ -587,25 +687,33 @@ const App = () => {
                             {userInfo.username && (
                               <div className="user-info-item">
                                 <span className="info-key">Username</span>
-                                <span className="info-val">{userInfo.username}</span>
+                                <span className="info-val">
+                                  {userInfo.username}
+                                </span>
                               </div>
                             )}
                             {userInfo.email && (
                               <div className="user-info-item">
                                 <span className="info-key">Email</span>
-                                <span className="info-val">{userInfo.email}</span>
+                                <span className="info-val">
+                                  {userInfo.email}
+                                </span>
                               </div>
                             )}
                             {userInfo.current_tier && (
                               <div className="user-info-item">
                                 <span className="info-key">Tier</span>
-                                <span className="info-val tier-badge">{userInfo.current_tier}</span>
+                                <span className="info-val tier-badge">
+                                  {userInfo.current_tier}
+                                </span>
                               </div>
                             )}
                             {userInfo.referral_code && (
                               <div className="user-info-item">
                                 <span className="info-key">Referral</span>
-                                <span className="info-val">{userInfo.referral_code}</span>
+                                <span className="info-val">
+                                  {userInfo.referral_code}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -615,7 +723,7 @@ const App = () => {
                       <button
                         className="sign-btn reset-btn"
                         onClick={() => {
-                          setAuthStep('idle');
+                          setAuthStep("idle");
                           setAuthError(null);
                           setNonceData(null);
                           setSignatureDisplay(null);
@@ -633,7 +741,7 @@ const App = () => {
               )}
 
               {/* Sign Message Tab */}
-              {signTab === 'sign' && (
+              {signTab === "sign" && (
                 <div className="sign-tab-content">
                   <p className="auth-description">
                     Enter any message and sign it with your connected wallet.
@@ -656,17 +764,20 @@ const App = () => {
                         Signing...
                       </>
                     ) : (
-                      'Sign Message'
+                      "Sign Message"
                     )}
                   </button>
                   {signedMessage && (
                     <div className="signed-result">
                       <div className="signed-label">Signed Message</div>
                       <div className="signed-value">{signedMessage}</div>
-                      <button className="copy-btn" onClick={() => {
-                        navigator.clipboard.writeText(signedMessage);
-                        alert('Signature copied!');
-                      }}>
+                      <button
+                        className="copy-btn"
+                        onClick={() => {
+                          navigator.clipboard.writeText(signedMessage);
+                          alert("Signature copied!");
+                        }}
+                      >
                         Copy Signature
                       </button>
                     </div>
@@ -675,7 +786,7 @@ const App = () => {
               )}
 
               {/* Verify Signature Tab */}
-              {signTab === 'verify' && (
+              {signTab === "verify" && (
                 <div className="sign-tab-content">
                   <p className="auth-description">
                     Verify that a message was signed by your connected wallet.
@@ -684,24 +795,40 @@ const App = () => {
                     className="sign-input"
                     placeholder="Enter the original message..."
                     value={verifyMessage}
-                    onChange={(e) => { setVerifyMessage(e.target.value); setVerifyResult(null); }}
+                    onChange={(e) => {
+                      setVerifyMessage(e.target.value);
+                      setVerifyResult(null);
+                    }}
                     rows={3}
                   />
                   <textarea
                     className="sign-input"
                     placeholder="Enter the signature (base58)..."
                     value={verifySignatureInput}
-                    onChange={(e) => { setVerifySignatureInput(e.target.value); setVerifyResult(null); }}
+                    onChange={(e) => {
+                      setVerifySignatureInput(e.target.value);
+                      setVerifyResult(null);
+                    }}
                     rows={2}
                   />
                   <div className="verify-wallet-info">
-                    <span className="verify-wallet-label">Verifying against:</span>
-                    <span className="verify-wallet-addr">{walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-6)}` : ''}</span>
+                    <span className="verify-wallet-label">
+                      Verifying against:
+                    </span>
+                    <span className="verify-wallet-addr">
+                      {walletAddress
+                        ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-6)}`
+                        : ""}
+                    </span>
                   </div>
                   <button
                     className="sign-btn"
                     onClick={verifyMessageSignature}
-                    disabled={isVerifying || !verifyMessage.trim() || !verifySignatureInput.trim()}
+                    disabled={
+                      isVerifying ||
+                      !verifyMessage.trim() ||
+                      !verifySignatureInput.trim()
+                    }
                   >
                     {isVerifying ? (
                       <>
@@ -709,24 +836,32 @@ const App = () => {
                         Verifying...
                       </>
                     ) : (
-                      'Verify Signature'
+                      "Verify Signature"
                     )}
                   </button>
-                  {verifyResult === 'valid' && (
+                  {verifyResult === "valid" && (
                     <div className="verify-result valid">
                       <span className="verify-result-icon">&#10003;</span>
                       <div className="verify-result-text">
-                        <div className="verify-result-title">Valid Signature</div>
-                        <div className="verify-result-desc">This message was signed by the connected wallet.</div>
+                        <div className="verify-result-title">
+                          Valid Signature
+                        </div>
+                        <div className="verify-result-desc">
+                          This message was signed by the connected wallet.
+                        </div>
                       </div>
                     </div>
                   )}
-                  {verifyResult === 'invalid' && (
+                  {verifyResult === "invalid" && (
                     <div className="verify-result invalid">
                       <span className="verify-result-icon">&#10007;</span>
                       <div className="verify-result-text">
-                        <div className="verify-result-title">Invalid Signature</div>
-                        <div className="verify-result-desc">This signature does not match the message or wallet.</div>
+                        <div className="verify-result-title">
+                          Invalid Signature
+                        </div>
+                        <div className="verify-result-desc">
+                          This signature does not match the message or wallet.
+                        </div>
                       </div>
                     </div>
                   )}
@@ -735,19 +870,28 @@ const App = () => {
             </div>
 
             <div className="tab-nav">
-              <button className={`tab ${activeTab === 'wallet' ? 'active' : ''}`} onClick={() => setActiveTab('wallet')}>
+              <button
+                className={`tab ${activeTab === "wallet" ? "active" : ""}`}
+                onClick={() => setActiveTab("wallet")}
+              >
                 Activity
               </button>
-              <button className={`tab ${activeTab === 'nfts' ? 'active' : ''}`} onClick={() => setActiveTab('nfts')}>
+              <button
+                className={`tab ${activeTab === "nfts" ? "active" : ""}`}
+                onClick={() => setActiveTab("nfts")}
+              >
                 NFTs
               </button>
-              <button className={`tab ${activeTab === 'tokens' ? 'active' : ''}`} onClick={() => setActiveTab('tokens')}>
+              <button
+                className={`tab ${activeTab === "tokens" ? "active" : ""}`}
+                onClick={() => setActiveTab("tokens")}
+              >
                 Tokens
               </button>
             </div>
 
             <div className="content-area">
-              {activeTab === 'wallet' && (
+              {activeTab === "wallet" && (
                 <div className="transactions">
                   <h2 className="section-title">Recent Activity</h2>
                   {recentTransactions.length === 0 ? (
@@ -759,19 +903,25 @@ const App = () => {
                     <div className="transaction-list">
                       {recentTransactions.map((tx) => (
                         <div key={tx.signature} className="transaction-item">
-                          <div className="tx-icon">{tx.err ? '❌' : '✓'}</div>
+                          <div className="tx-icon">{tx.err ? "❌" : "✓"}</div>
                           <div className="tx-details">
-                            <div className="tx-signature">{formatAddress(tx.signature)}</div>
-                            <div className="tx-time">{formatTime(tx.timestamp)}</div>
+                            <div className="tx-signature">
+                              {formatAddress(tx.signature)}
+                            </div>
+                            <div className="tx-time">
+                              {formatTime(tx.timestamp)}
+                            </div>
                           </div>
-                          <div className="tx-status">{tx.err ? 'Failed' : 'Success'}</div>
+                          <div className="tx-status">
+                            {tx.err ? "Failed" : "Success"}
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               )}
-              {activeTab === 'nfts' && (
+              {activeTab === "nfts" && (
                 <div className="nfts">
                   <h2 className="section-title">NFT Collection</h2>
                   <div className="empty-state">
@@ -780,7 +930,7 @@ const App = () => {
                   </div>
                 </div>
               )}
-              {activeTab === 'tokens' && (
+              {activeTab === "tokens" && (
                 <div className="tokens">
                   <h2 className="section-title">Token Holdings</h2>
                   <div className="token-list">
@@ -792,7 +942,9 @@ const App = () => {
                       </div>
                       <div className="token-balance">
                         <div className="token-amount">{balance.toFixed(4)}</div>
-                        <div className="token-value">≈ ${(balance * 0).toFixed(2)}</div>
+                        <div className="token-value">
+                          ≈ ${(balance * 0).toFixed(2)}
+                        </div>
                       </div>
                     </div>
                   </div>
