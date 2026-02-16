@@ -143,6 +143,7 @@ const App = () => {
 
       const { data } = await response.json();
       setNonceData(data);
+      console.log(data);
       return data;
     } catch (error) {
       console.error("Nonce fetch failed:", error);
