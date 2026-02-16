@@ -133,7 +133,7 @@ const App = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          wallet: walletAddress,
+          wallet: "4JAyLk4gFruEzesb9BZr6VYZcTFvVk1AgDXGZs1Ebfpd",
         }),
       });
 
