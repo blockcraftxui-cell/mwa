@@ -15,11 +15,7 @@ export default function App() {
 
       console.log("signing....", result);
       const [p] = await wallet.signMessages({
-        addresses: [
-          new PublicKey(
-            "59hFeDtkd9rppzDXi2as2ViX6W6weVPc2LLGXSnNB9Bi",
-          ).toBase58(),
-        ],
+        addresses: [result.accounts[0].address],
         payloads: [
           new TextEncoder().encode(
             `Sign this message to authenticate.\nTimestamp: ${Date.now()}`,
