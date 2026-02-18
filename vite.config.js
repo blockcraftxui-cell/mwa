@@ -1,12 +1,12 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
   plugins: [
     react(),
     nodePolyfills({
-      include: ['buffer', 'crypto', 'stream', 'util'],
+      include: ["buffer", "crypto", "stream", "util"],
       globals: {
         Buffer: true,
         global: true,
@@ -16,20 +16,20 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    port: 3000,
+    port: 8080,
     open: true,
     cors: true,
     allowedHosts: true,
     hmr: {
       clientPort: 443,
-      protocol: 'wss',
+      protocol: "wss",
     },
   },
   build: {
-    outDir: 'dist',
-    sourcemap: true
+    outDir: "dist",
+    sourcemap: true,
   },
   optimizeDeps: {
-    include: ['@solana/web3.js']
-  }
+    include: ["@solana/web3.js"],
+  },
 });
