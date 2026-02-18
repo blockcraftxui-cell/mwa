@@ -6,7 +6,7 @@ const APP_IDENTITY = {
 };
 export default function App() {
   const onClickHandler = async () => {
-    await transact(async () => {
+    await transact(async (wallet) => {
       const result = await wallet.authorize({
         identity: APP_IDENTITY,
         auth_token: token ?? undefined,
